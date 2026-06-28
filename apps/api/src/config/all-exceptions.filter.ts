@@ -30,7 +30,7 @@ export class CatchEverythingFilter implements ExceptionFilter {
       statusCode: httpStatus,
       message:"An unexpected error occurred.",
       timestamp: new Date().toISOString(),
-      path: httpAdapter.getRequestUrl(ctx.getRequest()),
+      path: httpAdapter.getRequestUrl(ctx.getRequest<Request>()),
     };
 
     httpAdapter.reply(ctx.getResponse(), responseBody, httpStatus);
