@@ -52,7 +52,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Generate Prisma client
-        run: pnpm --filter @queueflow/api exec npx prisma generate
+        run: pnpm --filter @event-queue/api exec npx prisma generate
 
       - name: Lint
         run: pnpm lint
@@ -61,7 +61,7 @@ jobs:
         run: pnpm typecheck
 
       - name: Run migrations
-        run: pnpm --filter @queueflow/api exec npx prisma migrate deploy
+        run: pnpm --filter @event-queue/api exec npx prisma migrate deploy
 
       - name: Build
         run: pnpm build
