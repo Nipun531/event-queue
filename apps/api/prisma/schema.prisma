@@ -1,0 +1,185 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Tenant — who is using the system.
+// QueueFlow is multi-tenant — multiple organisations can use it, each isolated from the others.
+// Every job, queue, and workflow belongs to a tenant.
+// Think of it like a row in a "customers" table.
+
+model Tenant {
+  id           String   @id @default(uuid())
+  name         String
+  apiKeyHash   String   @unique // SHA-256, never store plain text
+  plan         String   @default("free") // free | pro | enterprise
+  rateLimitRps Int      @default(10) // requests per second
+  maxWorkers   Int      @default(2)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  queues    Queue[]
+  jobs      Job[]
+  workflows Workflow[]
+}
+
+// Queue — a named channel for jobs.
+// You don't just dump all jobs into one pile.
+// You create separate queues — one for emails, one for image processing, one for reports.
+// Each queue has its own concurrency settings and retry config. A queue belongs to a tenant.
+// Think of it like a named list that workers subscribe to.
+
+model Queue {
+  id             String   @id @default(uuid())
+  tenantId       String
+  name           String
+  concurrency    Int      @default(5) // max parallel jobs
+  maxAttempts    Int      @default(3)
+  backoffType    String   @default("exponential") // exponential | fixed
+  backoffDelayMs Int      @default(1000)
+  createdAt      DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  jobs   Job[]
+
+  @@unique([tenantId, name])
+}
+
+// Job — the core of the entire system.
+// One row per background task.
+// Stores everything about a job: what type it is, what data it needs (payload),
+// what state it's in (JobStatus), how many times it's been attempted,
+// when it started, when it finished, which worker ran it, any error that occurred.
+// Every phase of the project reads and writes this table.
+
+model Job {
+  id            String    @id @default(uuid())
+  queueId       String
+  tenantId      String
+  type          String // 'send_email', 'resize_image'
+  payload       Json      @default("{}")
+  status        JobStatus @default(PENDING)
+  priority      Int       @default(0) // higher = processed first
+  attempts      Int       @default(0)
+  maxAttempts   Int       @default(3)
+  runAt         DateTime  @default(now()) // for scheduled jobs
+  startedAt     DateTime?
+  completedAt   DateTime?
+  failedAt      DateTime?
+  lastHeartbeat DateTime?
+  error         String?   @db.Text
+  result        Json? // output of successful job
+  workerId      String? // which worker ran this
+  parentJobId   String? // for workflow child jobs
+  createdAt     DateTime  @default(now())
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id])
+  queue   Queue    @relation(fields: [queueId], references: [id])
+  logs    JobLog[]
+
+  @@index([status, priority(sort: Desc), runAt])
+  @@index([queueId, status])
+  @@index([lastHeartbeat])
+  @@index([tenantId, createdAt(sort: Desc)])
+}
+
+// JobLog — an append-only log of everything that happened to a job.
+// Every time a job changes state, a row is written here.
+// "Job started at 10:00", "Attempt 1 failed: timeout", "Retry scheduled for 10:01", "Attempt 2 succeeded".
+// It's the audit trail. Without this you have no idea what happened to a job — you only know its final state.
+
+model JobLog {
+  id        String   @id @default(uuid())
+  jobId     String
+  level     String // 'info' | 'warn' | 'error'
+  message   String   @db.Text
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, createdAt])
+}
+
+// Worker — a registry of all running worker processes.
+// When a worker starts it writes a row here.
+// Every 5 seconds it updates its lastHeartbeat timestamp.
+// The stalled job detector queries this to find dead workers.
+
+model Worker {
+  id            String   @id @default(uuid())
+  hostname      String
+  pid           Int
+  queues        String[] // which queues this worker handles
+  concurrency   Int      @default(5)
+  status        String   @default("active") // active | draining | stopped
+  lastHeartbeat DateTime @default(now())
+  startedAt     DateTime @default(now())
+
+  @@index([lastHeartbeat])
+}
+
+// Workflow — the definition of a multi-step job chain.
+// Stores the DAG as a JSON blob. This is a template — it describes what a workflow does, not a specific run.
+// Think of it like a recipe. You define it once and can trigger it many times.
+
+model Workflow {
+  id            String   @id @default(uuid())
+  tenantId      String
+  name          String
+  dagDefinition Json // { steps: [{ id, type, payload, dependsOn: [] }] }
+  createdAt     DateTime @default(now())
+
+  tenant Tenant        @relation(fields: [tenantId], references: [id])
+  runs   WorkflowRun[]
+}
+
+// WorkflowRun — one execution of a workflow.
+// Every time you trigger a workflow, a WorkflowRun row is created.
+// If Workflow is the recipe, WorkflowRun is one time you actually cooked it.
+
+model WorkflowRun {
+  id          String    @id @default(uuid())
+  workflowId  String
+  status      String    @default("running")
+  context     Json      @default("{}") // shared data passed between steps
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  workflow  Workflow          @relation(fields: [workflowId], references: [id])
+  stepRuns  WorkflowStepRun[]
+}
+
+// WorkflowStepRun — one step within one workflow execution.
+// If your workflow has 5 steps and you run it, you get 5 WorkflowStepRun rows.
+// Tracks that step's status, which Job was created for it, and what output it produced.
+// This is what lets you see "step 1 done, step 2 running, steps 3 and 4 pending" in the dashboard.
+
+model WorkflowStepRun {
+  id          String    @id @default(uuid())
+  runId       String
+  stepId      String // matches the step id inside dagDefinition
+  status      String    @default("pending")
+  jobId       String? // the Job created to execute this step
+  output      Json? // output passed to dependent steps
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  run WorkflowRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  RETRYING
+  DEAD
+  CANCELLED
+}

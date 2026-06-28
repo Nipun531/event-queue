@@ -1,0 +1,15 @@
+FROM node:22
+
+WORKDIR /worker
+
+COPY package*.json ./
+
+RUN pnpm install
+
+COPY . .
+
+# ENV PORT = 9000
+
+# EXPOSE 9000
+
+CMD ["pnpm", "start"]

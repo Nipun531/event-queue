@@ -2,12 +2,15 @@
   "name": "event-queue",
   "private": true,
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types"
-  },
+  "build": "turbo build",
+  "dev": "turbo dev",
+  "lint": "turbo lint",
+  "typecheck": "turbo typecheck",
+  "test": "turbo test",
+  "test:unit": "turbo test:unit",
+  "test:integration": "turbo test:integration",
+  "clean": "turbo clean && rm -rf node_modules"
+},
   "devDependencies": {
     "prettier": "^3.7.4",
     "turbo": "^2.9.16",
