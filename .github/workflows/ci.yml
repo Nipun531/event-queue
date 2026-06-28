@@ -51,14 +51,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma client
+        run: pnpm --filter @queueflow/api exec npx prisma generate
+
       - name: Lint
         run: pnpm lint
 
       - name: Typecheck
         run: pnpm typecheck
-
-      - name: Generate Prisma client
-        run: pnpm --filter @queueflow/api exec npx prisma generate
 
       - name: Run migrations
         run: pnpm --filter @queueflow/api exec npx prisma migrate deploy

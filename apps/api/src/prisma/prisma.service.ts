@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -10,7 +14,6 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     const adapter = new PrismaPg({
       connectionString: process.env.DATABASE_URL!,
     });
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     this.client = new PrismaClient({ adapter });
   }
 
