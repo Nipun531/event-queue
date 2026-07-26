@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { Prisma } from '@prisma/client';
 import { PrismaService } from "src/prisma/prisma.service";
 import { CreateJobDto, CreateJobSchema, ListJobsQueryDto, ListJobsQuerySchema } from "@event-queue/shared-types";
 import Redis from "ioredis";
@@ -70,8 +71,8 @@ export class JobsService {
     return { jobId: job.id, status: 'PENDING' };
   }
 
-  async findAll(query: ListJobsQueryDto) {
-  const parsed = ListJobsQuerySchema.parse({
+async findAll(query: ListJobsQueryDto) {
+  const parsed: ListJobsQueryDto = ListJobsQuerySchema.parse({
     status: query.status,
     queue: query.queue,
     type: query.type,
@@ -84,14 +85,21 @@ export class JobsService {
   });
   if (!tenant) throw new NotFoundException('Tenant not found');
 
-  const where: any = { tenantId: tenant.id };
-  if (parsed.status) where.status = parsed.status;
-  if (parsed.type) where.type = parsed.type;
+  const where: Prisma.JobWhereInput = { tenantId: tenant.id };
+
+  if (parsed.status) {
+    where.status = parsed.status;
+  }
+  if (parsed.type) {
+    where.type = parsed.type;
+  }
   if (parsed.queue) {
     const queueRow = await this.prisma.db.queue.findUnique({
       where: { tenantId_name: { tenantId: tenant.id, name: parsed.queue } },
     });
-    if (queueRow) where.queueId = queueRow.id;
+    if (queueRow) {
+      where.queueId = queueRow.id;
+    }
   }
 
   const skip = (parsed.page - 1) * parsed.limit;

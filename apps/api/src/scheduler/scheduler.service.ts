@@ -20,7 +20,7 @@ export class SchedulerService {
         queue: string;
       }
 
-      const { jobId, queue }: ScheduledJobRef = JSON.parse(raw);
+      const { jobId, queue }: ScheduledJobRef = JSON.parse(raw) as ScheduledJobRef;
 
       await this.redis.xadd(`queue:${queue}:stream`, '*', 'jobId', jobId);
       await this.redis.zrem('queue:scheduled', raw);
