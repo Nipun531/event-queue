@@ -1,5 +1,24 @@
 {
     "name": "@event-queue/worker",
     "version": "0.1.0",
-    "private": true
+    "private": true,
+    "scripts": {
+        "dev": "tsx src/worker.ts"
+    },
+    "dependencies": {
+        "@event-queue/queue-core": "workspace:^",
+        "@prisma/adapter-pg": "^7.8.0",
+        "@prisma/client": "^7.8.0",
+        "@types/pg": "^8.20.0",
+        "dotenv": "^17.4.2",
+        "ioredis": "^5.11.1",
+        "pg": "^8.22.0",
+        "prisma": "^7.8.0"
+    },
+    "devDependencies": {
+        "@types/node": "^24.0.0",
+        "ts-node": "^10.9.2",
+        "tsx": "^4.23.0",
+        "typescript": "^5.9.2"
+    }
 }

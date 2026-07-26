@@ -1,5 +1,19 @@
 {
-    "name": "@event-queue/queue-core",
-    "version": "0.1.0",
-    "private": true
+  "name": "@event-queue/queue-core",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+  "build": "tsc",
+  "test": "vitest run"
+},
+  "dependencies": {
+    "@prisma/client": "^7.8.0",
+    "axios": "^1.7.0",
+    "sharp": "^0.33.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.10"
+  }
 }
