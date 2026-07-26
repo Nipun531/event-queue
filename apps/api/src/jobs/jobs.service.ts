@@ -39,7 +39,7 @@ export class JobsService {
         queueId: queue.id,
         tenantId: tenant.id,
         type: dto.type,
-        payload: (dto.payload ?? {}) as object,
+        payload: (dto.payload ?? {}) as Prisma.InputJsonValue,
         status: 'PENDING',
         priority: dto.priority ?? 0,
         runAt: dto.runAt ? new Date(dto.runAt) : new Date(),
