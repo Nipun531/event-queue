@@ -1,16 +1,10 @@
-import {Controller, Get,Inject} from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 
 @Controller('health')
 export class HealthController {
-
-  constructor(
-    @Inject('REDIS_CLIENT')
-    private readonly redisClient: any) {}
-
   @Get()
-  async check(){
-    const pong=await this.redisClient.ping();
-    return {status: 'OK',timestamp: new Date().toISOString(), redis: pong};
+  check() {
+    return { status: 'OK', timestamp: new Date().toISOString() };
   }
 }
 

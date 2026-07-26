@@ -51,6 +51,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build shared-types
+        run: pnpm --filter @event-queue/shared-types build
+
+      - name: Build queue-core
+        run: pnpm --filter @event-queue/queue-core build
+
       - name: Generate Prisma client
         run: pnpm --filter @event-queue/api exec npx prisma generate
 

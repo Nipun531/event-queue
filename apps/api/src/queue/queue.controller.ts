@@ -1,4 +1,4 @@
-import { Controller,Get, Post, Query,Body,Param } from '@nestjs/common';
+import { Controller,Get, Post,Body,Param } from '@nestjs/common';
 import { QueuesService } from './queue.service';
 import type { CreateQueueDto } from '@event-queue/shared-types';
 

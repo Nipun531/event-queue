@@ -15,7 +15,12 @@ export class SchedulerService {
     if (dueJobs.length === 0) return;
 
     for (const raw of dueJobs) {
-      const { jobId, queue } = JSON.parse(raw);
+      interface ScheduledJobRef {
+        jobId: string;
+        queue: string;
+      }
+
+      const { jobId, queue }: ScheduledJobRef = JSON.parse(raw);
 
       await this.redis.xadd(`queue:${queue}:stream`, '*', 'jobId', jobId);
       await this.redis.zrem('queue:scheduled', raw);
